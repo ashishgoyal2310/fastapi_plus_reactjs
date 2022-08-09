@@ -1,1 +1,1 @@
-web: gunicorn -w 4 -k uvicorn.workers.UvicornWorker quickstart:app
+web: gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:create_fast_app
