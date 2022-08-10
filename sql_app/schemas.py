@@ -1,3 +1,4 @@
+from typing import Union
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -23,7 +24,7 @@ class Item(ItemBase):
 class UserBase(BaseModel):
     email: str
     first_name: str
-    last_name: str
+    last_name: Union[str, None] = str
 
 
 class UserCreate(UserBase):
@@ -40,8 +41,9 @@ class User(UserBase):
 
 
 class LoginUser(BaseModel):
-    email: str
+    username: str
     password: str
+    grant_type: str = ""
 
 
 class UserToken(BaseModel):

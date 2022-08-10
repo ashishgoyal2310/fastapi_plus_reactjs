@@ -1,7 +1,8 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, func
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
 from hashers import make_password, check_password
+from datetime import datetime, timedelta
 
 from sql_app.db import Base
 
@@ -12,7 +13,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     first_name = Column(String)
-    last_name = Column(String)
+    last_name = Column(String, default="")
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
 
@@ -40,8 +41,15 @@ class UserToken(Base):
     api_key = Column(String, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
+    created_at = Column(DateTime, default=func.now())
+    modified_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
     # one-to-one UserToken.user
     user = relationship("User", backref=backref("user_token", uselist=False))
+
+    def is_expired(self):
+        is_expired = self.created_at < (datetime.now() - timedelta(minutes=10))
+        return is_expired
 
 
 class Item(Base):
