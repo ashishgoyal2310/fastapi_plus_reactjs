@@ -48,7 +48,7 @@ class UserToken(Base):
     user = relationship("User", backref=backref("user_token", uselist=False))
 
     def is_expired(self):
-        is_expired = self.created_at < (datetime.now() - timedelta(minutes=10))
+        is_expired = self.created_at < (datetime.now() - timedelta(minutes=60))
         return is_expired
 
 

@@ -24,7 +24,7 @@ class Item(ItemBase):
 class UserBase(BaseModel):
     email: str
     first_name: str
-    last_name: Union[str, None] = str
+    last_name: Union[str, None] = ""
 
 
 class UserCreate(UserBase):
@@ -50,6 +50,7 @@ class UserToken(BaseModel):
     id: int
     api_key: str
     user_id: int
+    token_type: str = 'bearer'
 
     class Config:
         orm_mode = True
