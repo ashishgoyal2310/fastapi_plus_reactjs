@@ -132,3 +132,5 @@ dmypy.json
 # custom exclusion
 */*.db
 */flask_session
+
+.vscode

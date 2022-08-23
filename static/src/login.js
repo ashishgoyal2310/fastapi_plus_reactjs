@@ -170,7 +170,8 @@ class RegisterComp extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      formData: {}
+      formData: {},
+      isRegistered: false,
     };
   }
 
@@ -217,20 +218,37 @@ class RegisterComp extends React.Component {
       "headers": {
         "Content-Type": "application/json"
       },
+      "async": false,
       "data": JSON.stringify(this.state.formData)
     };
 
+    let isRegistered = false;;
     $.ajax(ajaxSettings
       ).done(function(response, textStatus, jqXHR) {
         console.log(response, textStatus, jqXHR);
+        isRegistered = true;
       }).fail(function(jqXHR, textStatus, errorThrown) {
         console.log(jqXHR, textStatus, errorThrown);
+        if (jqXHR.responseJSON && jqXHR.responseJSON.detail) {
+          alert(jqXHR.responseJSON.detail);
+        }
       });
+
+    this.setState(prevState => {
+      return {
+        ...prevState,
+        isRegistered: isRegistered,
+      };
+    });
   }
 
   render() {
+    let { isRegistered } = this.state;
+
     return (
       <>
+        {/* Navigate to dashboard if already login */}
+        {isRegistered && (<ReactRouterDOM.Navigate to="/register" replace={true} />)}
         <div class="text-center">
             <h1 class="h4 text-gray-900 mb-4">Create an Account!</h1>
         </div>
@@ -295,30 +313,249 @@ class ForgotPwdComp extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      formData: {},
+      forgotEmail: "",  // set email once forgot-password ajax request done else empty
+      passwordReset: false, // true one password reset is done else false
     };
   }
 
-  render() {
+  handleFormChange = (event) => {
+    const target = event.target;
+    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const name = target.name;
+    const formData = {...this.state.formData, [name]: value};
+
+    this.setState(prevState => {
+      return {
+        ...prevState,
+        formData: formData, 
+      };
+    });
+  }
+
+  validateFormChange = (event) => {
+    const formData = {...this.state.formData};
+    let response = {"message": ""}
+
+    if (!formData.email) {
+      response["message"] = 'email missing.'
+    } else if ((formData.password || formData.repeat_password) && (formData.password != formData.repeat_password)) {
+        response["message"] = 'repeat password should be same.'
+    }
+
+    return response;
+  }
+
+  handleForgotFormSubmit = (event) => {
+    event.preventDefault();
+    const { formData } = this.state;
+
+    const validData = this.validateFormChange()
+    if (validData["message"]) {
+      alert("Invalid form data. " + validData["message"]);
+      return false;
+    }
+
+    var ajaxSettings = {
+      "url": "/api/accounts/password-forgot",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "async": false,
+      "data": JSON.stringify(formData)
+    };
+
+    let forgotEmail = "";
+    $.ajax(ajaxSettings
+      ).done(function(response, textStatus, jqXHR) {
+        console.log(response, textStatus, jqXHR);
+        forgotEmail = formData.email;
+
+      }).fail(function(jqXHR, textStatus, errorThrown) {
+        console.log(jqXHR, textStatus, errorThrown);
+        if (jqXHR.responseJSON && jqXHR.responseJSON.detail) {
+          alert(jqXHR.responseJSON.detail);
+        }
+      });
+
+    this.setState(prevState => {
+      return {
+        ...prevState,
+        forgotEmail: forgotEmail,
+      };
+    });
+  }
+
+  handleResetPwdFormSubmit = (event) => {
+    event.preventDefault();
+    const { formData } = this.state;
+
+    const validData = this.validateFormChange()
+    if (validData["message"]) {
+      alert("Invalid form data. " + validData["message"]);
+      return false;
+    }
+
+    var ajaxSettings = {
+      "url": "/api/accounts/password-reset",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "async": false,
+      "data": JSON.stringify(formData)
+    };
+
+    let passwordReset = false;
+    $.ajax(ajaxSettings
+      ).done(function(response, textStatus, jqXHR) {
+        console.log(response, textStatus, jqXHR);
+        passwordReset = true;
+
+      }).fail(function(jqXHR, textStatus, errorThrown) {
+        console.log(jqXHR, textStatus, errorThrown);
+        if (jqXHR.responseJSON && jqXHR.responseJSON.detail) {
+          alert(jqXHR.responseJSON.detail);
+        }
+      });
+
+    this.setState(prevState => {
+      return {
+        ...prevState,
+        passwordReset : passwordReset  ,
+      };
+    });
+  }
+
+  get_password_forgot_from = () => {
     return (
-      <div>
+      <>
         <div class="text-center">
             <h1 class="h4 text-gray-900 mb-2">Forgot Your Password?</h1>
             <p class="mb-4">We get it, stuff happens. Just enter your email address below
-                and we'll send you a link to reset your password!</p>
+                and we'll send you a OTP on your mail to reset your password!</p>
         </div>
-        <form class="user">
+        <form class="user" onSubmit={(event) => this.handleForgotFormSubmit(event)} method="post">
             <div class="form-group">
-                <input type="email" class="form-control form-control-user" id="exampleInputEmail" aria-describedby="emailHelp" placeholder="Enter Email Address..." />
+                <input
+                  type="email"
+                  name="email"
+                  value={this.state.email}
+                  onChange={this.handleFormChange}
+                  class="form-control form-control-user" aria-describedby="emailHelp"
+                  placeholder="Enter Email Address..." required />
             </div>
-            <NavLinkBtn name="Reset Password" url="/reset-password" />
+            <input type="submit" class="btn btn-primary btn-user btn-block" value="Reset Password" />
         </form>
         <hr />
         <div>
           <NavLink name="Create an Account!" url="/register" />
           <NavLink name="Already have an account? Login!" url="/login" />
         </div>
-      </div>
-    );
+      </>
+    )
+  }
+
+  get_password_reset_from = () => {
+    let { forgotEmail } = this.state;
+
+    return (
+      <>
+        <div class="text-center">
+            <h1 class="h4 text-gray-900 mb-2">Reset Password</h1>
+        </div>
+        <form class="user" onSubmit={(event) => this.handleResetPwdFormSubmit(event)} method="post">
+            <div class="form-group">
+                <input type="email" value={forgotEmail} class="form-control form-control-user" placeholder="Email" disabled />
+            </div>
+            <div class="form-group">
+                <input
+                  type="number"
+                  name="token"
+                  value={this.state.token}
+                  onChange={this.handleFormChange}
+                  class="form-control form-control-user" placeholder="OTP Token" required />
+            </div>
+            <div class="form-group row">
+                <div class="col-sm-6 mb-3 mb-sm-0">
+                    <input
+                      type="password"
+                      name="password"
+                      value={this.state.password}
+                      onChange={this.handleFormChange}
+                      class="form-control form-control-user" placeholder="Password" required />
+                </div>
+                <div class="col-sm-6">
+                    <input
+                      type="password"
+                      name="repeat_password"
+                      value={this.state.repeat_password}
+                      onChange={this.handleFormChange}
+                      class="form-control form-control-user" placeholder="Repeat Password" />
+                </div>
+            </div>
+            <input type="submit" class="btn btn-primary btn-user btn-block" value="Reset Password" />
+        </form>
+        <hr />
+        <div>
+          <NavLink name="Already have an account? Login!" url="/login" />
+        </div>
+      </>
+    )
+  }
+
+  render() {
+    let { forgotEmail, passwordReset } = this.state;
+
+    if (passwordReset) {
+      return (
+        <>
+          <div class="text-center">
+            <h1 class="h4 text-gray-900 mb-2">Reset Password</h1>
+            <p class="mb-4">Yeah!! Password has been reset successfully.
+            You can apply new password to login.</p>
+          </div>
+          <hr />
+          <div>
+            <NavLink name="Login!" url="/login" />
+          </div>
+        </>
+      ) 
+    }
+    if (!forgotEmail) {
+      return this.get_password_forgot_from()
+    } else {
+      return this.get_password_reset_from()
+    }
+
+    // return (
+    //   <>
+    //     <div class="text-center">
+    //         <h1 class="h4 text-gray-900 mb-2">Forgot Your Password?</h1>
+    //         <p class="mb-4">We get it, stuff happens. Just enter your email address below
+    //             and we'll send you a OTP on your mail to reset your password!</p>
+    //     </div>
+    //     <form class="user" onSubmit={(event) => this.handleForgotFormSubmit(event)} method="post">
+    //         <div class="form-group">
+    //             <input
+    //               type="email"
+    //               name="email"
+    //               value={this.state.email}
+    //               onChange={this.handleFormChange}
+    //               class="form-control form-control-user" aria-describedby="emailHelp"
+    //               placeholder="Enter Email Address..." required />
+    //         </div>
+    //         <input type="submit" class="btn btn-primary btn-user btn-block" value="Reset Password" />
+    //     </form>
+    //     <hr />
+    //     <div>
+    //       <NavLink name="Create an Account!" url="/register" />
+    //       <NavLink name="Already have an account? Login!" url="/login" />
+    //     </div>
+    //   </>
+    // );
+
   }
 }
 

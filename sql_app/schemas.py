@@ -4,6 +4,10 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
+class EmptySchema(BaseModel):
+    message: str = ""
+
+
 class ItemBase(BaseModel):
     title: str
     description: Optional[str] = None
@@ -44,6 +48,16 @@ class LoginUser(BaseModel):
     username: str
     password: str
     grant_type: str = ""
+
+
+class UserForgotPassword(BaseModel):
+    email: str
+
+
+class UserResetPassword(BaseModel):
+    email: str
+    token: str
+    password: str
 
 
 class UserToken(BaseModel):

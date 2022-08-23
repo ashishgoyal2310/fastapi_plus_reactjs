@@ -1,3 +1,6 @@
+import random
+import uuid
+
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, func
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
@@ -47,8 +50,34 @@ class UserToken(Base):
     # one-to-one UserToken.user
     user = relationship("User", backref=backref("user_token", uselist=False))
 
+    @staticmethod
+    def generate_token():
+        return uuid.uuid1().hex
+
     def is_expired(self):
         is_expired = self.created_at < (datetime.now() - timedelta(minutes=60))
+        return is_expired
+
+
+class ForgotPassword(Base):
+    __tablename__ = "forgotpasswords"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+
+    created_at = Column(DateTime, default=func.now())
+    modified_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # one-to-one ForgotPassword.user
+    user = relationship("User", backref=backref("forgot_password", uselist=False))
+
+    @staticmethod
+    def generate_token():
+        return random.randint(123456, 999999)
+
+    def is_expired(self):
+        is_expired = self.created_at < (datetime.now() - timedelta(minutes=10))
         return is_expired
 
 

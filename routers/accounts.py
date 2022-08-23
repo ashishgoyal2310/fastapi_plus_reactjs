@@ -1,3 +1,4 @@
+import secrets
 from fastapi import APIRouter
 from typing import List
 
@@ -60,6 +61,30 @@ def login_user(data: schemas.LoginUser, db: Session = Depends(get_db)):
         db_user_token = crud.create_user_token(db, user_id=db_user.id)
         return db_user_token
     raise HTTPException(status_code=400, detail="Invalid credentials.")
+
+
+@router.post("/password-forgot", response_model=schemas.EmptySchema)
+def user_password_forgot(data: schemas.UserForgotPassword, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, email=data.email)
+    if not db_user:
+        raise HTTPException(status_code=400, detail="Invalid email.")
+    db_forgot_pwd = crud.create_forgot_password(db=db, db_user=db_user)
+    return {"message": "success"}
+
+
+@router.post("/password-reset", response_model=schemas.EmptySchema)
+def user_password_forgot(data: schemas.UserResetPassword, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, email=data.email)
+    if not db_user:
+        raise HTTPException(status_code=400, detail="Invalid email.")
+    
+    db_forgot_pwd = db_user.forgot_password
+    if not db_forgot_pwd or db_forgot_pwd.token != data.token:
+        raise HTTPException(status_code=400, detail="Invalid token.")
+    elif db_forgot_pwd.is_expired():
+        raise HTTPException(status_code=400, detail="Expired token.")
+    db_user = crud.reset_forgot_password(db, db_user=db_user, password=data.password)
+    return {"message": "success"}
 
 
 @router.post("/register", response_model=schemas.User)
